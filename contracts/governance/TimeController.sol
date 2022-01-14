@@ -291,6 +291,39 @@ contract TimelockController is AccessControl {
     }
 
     /**
+     * @dev FlagOperation to pause an (pending or ready) operation .
+     *
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'veto' role.
+     */
+    function flagOperation(bytes32 id) public virtual onlyRole(VETO_ROLE){
+        require(!isOperationDone(id),"TimelockController: operation is done, can not be paused");
+        require(_paused[id]==0 , "TimelockController: operation is either already paused or can not be paused");
+        _paused[id] = 1 ;
+    }
+
+    /**
+     * @dev afterFlagOperation to (cancel or execute) a paused operation based on supreme court judgement .
+     * @param id operation id
+     * @param supreme_court_judgement is judgement returned from supreme court contract, true means veto is successful 
+     *       
+     * Requirements:
+     *
+     * - the caller must have the PROPOSER role.
+     */
+    function afterFlagOperation(bytes32 id, bool supreme_court_judgement) public onlyRole(PROPOSER_ROLE) {
+        require(_paused[id]==1 , "TimelockController: operation is not paused");
+        if(supreme_court_judgement){
+            cancel(id);
+        }
+        else{
+            _paused[id] = 2 ;
+        }
+    }
+
+    /**
      * @dev Execute an (ready) operation containing a batch of transactions.
      *
      * Emits one {CallExecuted} event per transaction in the batch.
@@ -322,6 +355,7 @@ contract TimelockController is AccessControl {
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
         require(isOperationReady(id), "TimelockController: operation is not ready");
+        require(_paused[id]!=1 , "TimelockController: operation is paused can not be executed");
         require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
     }
 
