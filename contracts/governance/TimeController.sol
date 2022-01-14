@@ -51,6 +51,12 @@ contract TimelockController is AccessControl {
         uint256 delay
     );
 
+    /** 
+     * @dev Emitted when an operation `id` is paused by VETO
+     */
+    event FlaggedOperation(bytes32 indexed id);
+
+
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
      */
@@ -291,7 +297,7 @@ contract TimelockController is AccessControl {
     }
 
     /**
-     * @dev FlagOperation to pause an (pending or ready) operation .
+     * @dev flagOperation to pause an (pending or ready) operation .
      *
      *
      * Requirements:
@@ -302,6 +308,7 @@ contract TimelockController is AccessControl {
         require(!isOperationDone(id),"TimelockController: operation is done, can not be paused");
         require(_paused[id]==0 , "TimelockController: operation is either already paused or can not be paused");
         _paused[id] = 1 ;
+        emit FlaggedOperation(id);
     }
 
     /**
