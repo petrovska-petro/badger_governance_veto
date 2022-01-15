@@ -126,6 +126,9 @@ contract TimelockController is AccessControl {
      */
     receive() external payable {}
 
+    function getOperationState(bytes32 id) public view returns (uint16 paused){
+        return _paused[id] ;
+    }
     /**
      * @dev Returns whether an id correspond to a registered operation. This
      * includes both Pending, Ready and Done operations.
