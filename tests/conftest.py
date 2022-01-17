@@ -4,7 +4,7 @@ from brownie import (
 )
 from dotmap import DotMap 
 import pytest
-
+# fixture to deploy TimeController contract
 @pytest.fixture()
 def deploy():
     deployer = accounts[0]
@@ -17,6 +17,7 @@ def deploy():
         veto = deployer
     )
 
+# fixture to create a dummy operation so that we can test flagOperation on this operation
 @pytest.fixture()
 def random_operation():
     return DotMap(
@@ -28,6 +29,7 @@ def random_operation():
         delay = 0 
     )
 
+# fixture to schedule an operation
 @pytest.fixture()
 def schedule_operation(deploy, random_operation):
     contract = deploy.contract
