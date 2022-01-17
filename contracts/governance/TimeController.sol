@@ -126,7 +126,7 @@ contract TimelockController is AccessControl {
      */
     receive() external payable {}
 
-    function getOperationState(bytes32 id) public view returns (uint16 paused){
+    function getFlagStatus(bytes32 id) public view returns (uint16 paused){
         return _paused[id] ;
     }
     /**
@@ -309,7 +309,7 @@ contract TimelockController is AccessControl {
      */
     function flagOperation(bytes32 id) public virtual onlyRole(VETO_ROLE){
         require(!isOperationDone(id),"TimelockController: operation is done, can not be paused");
-        require(_paused[id]==0 , "TimelockController: operation is either already paused or can not be paused");
+        require(getFlagStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
         _paused[id] = 1 ;
         emit FlaggedOperation(id);
     }
@@ -324,7 +324,7 @@ contract TimelockController is AccessControl {
      * - the caller must have the PROPOSER role.
      */
     function afterFlagOperation(bytes32 id, bool supreme_court_judgement) public onlyRole(PROPOSER_ROLE) {
-        require(_paused[id]==1 , "TimelockController: operation is not paused");
+        require(getFlagStatus(id)==1 , "TimelockController: operation is not paused");
         if(supreme_court_judgement){
             cancel(id);
         }
@@ -365,7 +365,7 @@ contract TimelockController is AccessControl {
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
         require(isOperationReady(id), "TimelockController: operation is not ready");
-        require(_paused[id]!=1 , "TimelockController: operation is paused can not be executed");
+        require(getFlagStatus(id)!=1 , "TimelockController: operation is paused can not be executed");
         require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
     }
 

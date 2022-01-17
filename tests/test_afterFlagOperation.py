@@ -21,11 +21,11 @@ def test_veto_passed(deploy, flag_operation):
     deployer = deploy.deployer 
     contract = deploy.contract
     contract.afterFlagOperation(id , True)
-    assert(contract.getOperationState(id)==1)
+    assert(contract.getFlagStatus(id)==1)
 
 def test_veto_failed(deploy , flag_operation):
     id = flag_operation
     deployer = deploy.deployer 
     contract = deploy.contract
     contract.afterFlagOperation(id , False)
-    assert(contract.getOperationState(id)==2)
+    assert(contract.getFlagStatus(id)==2)
