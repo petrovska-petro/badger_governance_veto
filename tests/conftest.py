@@ -8,10 +8,13 @@ import pytest
 @pytest.fixture()
 def deploy():
     deployer = accounts[0]
-    deployedTC = TimelockController.deploy(10, [deployer], [deployer], [deployer], {'from': deployer})
+    deployedTC = TimelockController.deploy(0, [deployer], [deployer], [deployer], {'from': deployer})
     return DotMap(
         contract = deployedTC,
-        deployer = deployer 
+        deployer = deployer,
+        proposer = deployer,
+        executer = deployer,
+        veto = deployer
     )
 
 @pytest.fixture()
@@ -22,12 +25,11 @@ def random_operation():
         data = "",
         predecessor = "",
         salt = "",
-        delay = 100 
+        delay = 0 
     )
 
 @pytest.fixture()
 def schedule_operation(deploy, random_operation):
-    deployer = deploy.deployer 
     contract = deploy.contract
     # schedule a proposal
     target = random_operation.target
@@ -36,6 +38,6 @@ def schedule_operation(deploy, random_operation):
     predecessor = random_operation.predecessor
     salt = random_operation.salt
     delay = random_operation.delay
-    contract.schedule(target, value, data, predecessor, salt, delay, {'from': deployer})
+    contract.schedule(target, value, data, predecessor, salt, delay, {'from': deploy.proposer})
     id = contract.hashOperation(target, value, data, predecessor, salt)
     return id 

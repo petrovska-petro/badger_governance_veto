@@ -3,18 +3,16 @@ import brownie
 @pytest.fixture()
 def flag_operation(deploy, schedule_operation):
     id = schedule_operation
-    deployer = deploy.deployer 
     contract = deploy.contract
-    contract.flagOperation(id, {'from': deployer})
+    contract.flagOperation(id, {'from': deploy.proposer})
     return id 
 
 def test_execute(deploy, flag_operation, random_operation):
     id = flag_operation
     deployer = deploy.deployer 
     contract = deploy.contract
-
-    with brownie.reverts():
-        contract.execute(random_operation.target, random_operation.value, random_operation.data, random_operation.salt, random_operation.delay)
+    with brownie.reverts("TimelockController: operation is paused can not be executed"):
+        contract.execute(random_operation.target, random_operation.value, random_operation.data, random_operation.salt, random_operation.delay , {"from" : deploy.executer})
 
 def test_veto_passed(deploy, flag_operation):
     id = flag_operation
