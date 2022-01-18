@@ -4,6 +4,7 @@ from brownie import (
 )
 from dotmap import DotMap 
 import pytest
+
 # fixture to deploy TimeController contract
 @pytest.fixture()
 def deploy():
@@ -22,10 +23,10 @@ def deploy():
 def random_operation():
     return DotMap(
         target = accounts[1],
-        value = 10,
-        data = "",
-        predecessor = "",
-        salt = "",
+        value = 0,
+        data = '0x13e414de',
+        predecessor=0,
+        salt='0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f',
         delay = 0 
     )
 
@@ -42,4 +43,12 @@ def schedule_operation(deploy, random_operation):
     delay = random_operation.delay
     contract.schedule(target, value, data, predecessor, salt, delay, {'from': deploy.proposer})
     id = contract.hashOperation(target, value, data, predecessor, salt)
+    return id 
+
+#fixture to flag an operation
+@pytest.fixture()
+def flag_operation(deploy, schedule_operation):
+    id = schedule_operation
+    contract = deploy.contract
+    contract.flagOperation(id, {'from': deploy.veto})
     return id 

@@ -1,13 +1,6 @@
 import pytest
 import brownie
 
-#fixture to flag an operation
-@pytest.fixture()
-def flag_operation(deploy, schedule_operation):
-    id = schedule_operation
-    contract = deploy.contract
-    contract.flagOperation(id, {'from': deploy.proposer})
-    return id 
 
 # test - an operation can not be executed if it is paused
 def test_execute(deploy, flag_operation, random_operation):
@@ -16,7 +9,7 @@ def test_execute(deploy, flag_operation, random_operation):
     contract = deploy.contract
     # transaction should revert as it is paused
     with brownie.reverts("TimelockController: operation is paused can not be executed"):
-        contract.execute(random_operation.target, random_operation.value, random_operation.data, random_operation.salt, random_operation.delay , {"from" : deploy.executer})
+        contract.execute(random_operation.target, random_operation.value, random_operation.data, random_operation.predecessor, random_operation.salt , {"from" : deploy.executer})
 
 # test- if a supreme court decision is true, it should be paused after afterFlagOperation
 def test_veto_passed(deploy, flag_operation):
