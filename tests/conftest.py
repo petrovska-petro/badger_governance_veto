@@ -21,6 +21,7 @@ def deploy():
 # fixture to create a dummy operation so that we can test flagOperation on this operation
 @pytest.fixture()
 def random_operation():
+    # the values I have taken from OpenZepplin tests
     return DotMap(
         target = accounts[1],
         value = 0,
