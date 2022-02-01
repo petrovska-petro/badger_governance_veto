@@ -275,7 +275,7 @@ contract TimelockController is AccessControl {
      *
      * Requirements:
      *
-     * - the caller must have the 'proposer' role.
+     * - the caller must have the 'executer' role.
      */
     function cancel(bytes32 id) public virtual onlyRole(EXECUTOR_ROLE) {
         require(isOperationPending(id), "TimelockController: operation cannot be cancelled");
@@ -329,7 +329,7 @@ contract TimelockController is AccessControl {
      *       
      * Requirements:
      *
-     * - the caller must have the PROPOSER role.
+     * - the caller must have the 'supremecourt' role.
      */
     function afterFlagOperation(bytes32 id, bool supremeCourtResponse) public onlyRole(SUPREMECOURT_ROLE) {
         require(getFlagStatus(id)==1 , "TimelockController: operation is not paused");
