@@ -25,6 +25,7 @@ contract TimelockController is AccessControl {
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 public constant VETO_ROLE = keccak256("VETO_ROLE");
+    bytes32 public constant SUPREMECOURT_ROLE = keccak256("SUPREMECOURT_ROLE");
     uint256 internal constant _DONE_TIMESTAMP = uint256(1);
 
     mapping(bytes32 => uint256) private _timestamps;
@@ -79,12 +80,14 @@ contract TimelockController is AccessControl {
         uint256 minDelay,
         address[] memory proposers,
         address[] memory executors,
-        address[] memory vetos
+        address[] memory vetos,
+        address[] memory supremecourts 
     ) {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(VETO_ROLE, TIMELOCK_ADMIN_ROLE);
+        _setRoleAdmin(SUPREMECOURT_ROLE, TIMELOCK_ADMIN_ROLE);
         // deployer + self administration
         _setupRole(TIMELOCK_ADMIN_ROLE, _msgSender());
         _setupRole(TIMELOCK_ADMIN_ROLE, address(this));
@@ -102,6 +105,11 @@ contract TimelockController is AccessControl {
         // register vetos
         for (uint256 i = 0; i < vetos.length; ++i) {
             _setupRole(VETO_ROLE, vetos[i]);
+        }
+
+        // register supremecourts
+        for (uint256 i = 0; i < supremecourts.length; ++i) {
+            _setupRole(SUPREMECOURT_ROLE, supremecourts[i]);
         }
 
         _minDelay = minDelay;
@@ -308,7 +316,7 @@ contract TimelockController is AccessControl {
      * - the caller must have the 'veto' role.
      */
     function flagOperation(bytes32 id) public virtual onlyRole(VETO_ROLE){
-        require(!isOperationDone(id),"TimelockController: operation is done, can not be paused");
+        require(isOperationPending(id),"TimelockController: operation is done, can not be paused");
         require(getFlagStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
         _paused[id] = 1 ;
         emit FlaggedOperation(id);
@@ -317,16 +325,17 @@ contract TimelockController is AccessControl {
     /**
      * @dev afterFlagOperation to (cancel or execute) a paused operation based on supreme court judgement .
      * @param id operation id
-     * @param supreme_court_judgement is judgement returned from supreme court contract, true means veto is successful 
+     * @param supremeCourtResponse is judgement returned from supreme court contract, true means veto is successful 
      *       
      * Requirements:
      *
      * - the caller must have the PROPOSER role.
      */
-    function afterFlagOperation(bytes32 id, bool supreme_court_judgement) public onlyRole(PROPOSER_ROLE) {
+    function afterFlagOperation(bytes32 id, bool supremeCourtResponse) public onlyRole(SUPREMECOURT_ROLE) {
         require(getFlagStatus(id)==1 , "TimelockController: operation is not paused");
-        if(supreme_court_judgement){
-            cancel(id);
+        if(supremeCourtResponse){
+            delete _timestamps[id];
+            emit Cancelled(id);
         }
         else{
             _paused[id] = 2 ;
