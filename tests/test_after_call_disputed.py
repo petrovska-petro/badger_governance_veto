@@ -9,7 +9,7 @@ def test_execute(deploy, dispute_operation, random_operation):
     contract = deploy.contract
     # transaction should revert as it is disputed
     with brownie.reverts(
-        "TimelockController: operation is disputed can not be executed"
+        "TimelockController: operation is disputed so it can not be executed"
     ):
         contract.execute(
             random_operation.target,
