@@ -8,18 +8,21 @@ For a deep explanation of the TimelockController, read [TimelockController](http
 
 In addition to the PROPOSE_ROLE and EXECUTE_ROLE that exist on the TimelockController, we should have a VETO_ROLE. The admin permissions for this role are the same as the others.
 
-A vetoer can flag a proposal once proposed, but before it is executed.
+A vetoer can dispute a proposal once proposed, but before it is executed.
 
-Once vetoed, a proposal is ‘paused’ and cannot be executed. The veto should notify another contract, the Supreme Court, that a proposal is disputed and that it requires additional input.
+Once vetoed, a proposal is ‘disputed’ and cannot be executed. The veto should notify another contract, the Supreme Court, that a proposal is disputed and that it requires additional input.
 
 ## Source code changes
  1. Added VETO_ROLE.
- 2. Initialized VETO_ROLE in constructor.
- 3. Created a mapping called paused which tells state of operations.
- * 0- not paused can be paused.
- * 1- paused operation.
- * 2- not paused but can not be paused, needed supreme court rejects it once.
- 4. Created a Function called FlagOperation to flag operation.
- 5. Created an event FlaggedOperation, will emit after the operation is flagged.
- 6. Created a Function afterFlagOperation, which will take the supreme court's judgement as input. It will either unpause the operation or cancel it based upon judgement.
- 7. Updated beforeCall() function so that the paused operation can not be executed. 
+ 2. Added SUPREMECOURT_ROLE.
+ 3. Added CANCELLOR_ROLE.
+ 4. Initialized all roles in constructor.
+ 5. Created a mapping called disputed which tells state of operations.
+ * 0- not disputed can be disputed.
+ * 1- disputed operation.
+ * 2- not disputed but can not be disputed, needed supreme court rejects it once.
+ 6. Created a Function called callDispute to dispute operation.
+ 7. Created an event CallDisputed, will emit after the operation is Disputed.
+ 8. Created a Function callDisputeResolve, which will take the supreme court's judgement as input. It will either unpause the operation or cancel it based upon judgement.
+ 9. Created an event CallDisputedResolved, will emit after the operation is Disputed.
+ 10. Updated beforeCall() function so that the disputed operation can not be executed. 
