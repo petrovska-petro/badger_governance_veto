@@ -27,18 +27,22 @@ contract TimelockController is AccessControl {
     bytes32 public constant VETO_ROLE = keccak256("VETO_ROLE");
     bytes32 public constant SUPREMECOURT_ROLE = keccak256("SUPREMECOURT_ROLE");
     bytes32 public constant CANCELLOR_ROLE = keccak256("CANCELLOR_ROLE");
+
     uint256 internal constant _DONE_TIMESTAMP = uint256(1);
 
     mapping(bytes32 => uint256) private _timestamps;
-    /**
-     * @dev paused is mapping which tells if the operation is paused or can be paused. 
-     * 0 => is not paused and can be paused
-     * 1 => paused
-     * 2 => not paused and can not be paused, needed as if an operation is paused once and supreme court rejects it
-     *      it can not be paused again. 
-     */
-    mapping(bytes32 => uint16) public _paused;
+
     uint256 private _minDelay;
+
+    /**
+     * @dev disputed is mapping which tells if the operation is disputed or can be disputed. 
+     * 0 => is not disputed and can be disputed
+     * 1 => disputed
+     * 2 => not disputed and can not be disputed, needed as if an operation is disputed once and 
+     *      supreme court rejects it, it can not be disputed again. 
+     */
+    mapping(bytes32 => uint16) public _disputed;
+    
 
     /**
      * @dev Emitted when a call is scheduled as part of operation `id`.
@@ -149,8 +153,8 @@ contract TimelockController is AccessControl {
      */
     receive() external payable {}
 
-    function getDisputeStatus(bytes32 id) public view returns (uint16 paused){
-        return _paused[id] ;
+    function getDisputeStatus(bytes32 id) public view returns (uint16 disputed){
+        return _disputed[id] ;
     }
     /**
      * @dev Returns whether an id correspond to a registered operation. This
@@ -355,7 +359,7 @@ contract TimelockController is AccessControl {
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
         require(isOperationReady(id), "TimelockController: operation is not ready");
-        require(getDisputeStatus(id)!=1 , "TimelockController: operation is paused can not be executed");
+        require(getDisputeStatus(id)!=1 , "TimelockController: operation is disputed can not be executed");
         require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
     }
 
@@ -403,21 +407,21 @@ contract TimelockController is AccessControl {
 
 
     /**
-     * @dev callDispute to pause an (pending or ready) operation .
+     * @dev callDispute to pause an (pending) operation .
      *
      * Requirements:
      *
      * - the caller must have the 'veto' role.
      */
     function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE){
-        require(isOperationPending(id),"TimelockController: operation is done, can not be paused");
-        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
-        _paused[id] = 1 ;
+        require(isOperationPending(id),"TimelockController: operation is either done or does not exist, can not be disputed");
+        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already disputed or can not be disputed");
+        _disputed[id] = 1 ;
         emit CallDisputed(id);
     }
 
     /**
-     * @dev afterCallDisputed to (cancel or execute) a paused operation based on supreme court judgement .
+     * @dev afterCallDisputed to (cancel or execute) a disputed operation based on supreme court judgement .
      * @param id operation id
      * @param ruling is judgement returned from supreme court contract, true means veto is successful 
      * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).      
@@ -427,13 +431,13 @@ contract TimelockController is AccessControl {
      * - the caller must have the 'supremecourt' role.
      */
     function afterCallDisputed(bytes32 id, bool ruling, bytes calldata data) public onlyRole(SUPREMECOURT_ROLE) {
-        require(getDisputeStatus(id)==1 , "TimelockController: operation is not paused");
+        require(getDisputeStatus(id)==1 , "TimelockController: operation is not disputed");
         if(ruling){
             delete _timestamps[id];
             emit Cancelled(id);
         }
         else{
-            _paused[id] = 2 ;
+            _disputed[id] = 2 ;
         }
         emit CallDisputedResolved(id, ruling, data);
     }
