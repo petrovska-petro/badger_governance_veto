@@ -24,5 +24,5 @@ Once vetoed, a proposal is ‘disputed’ and cannot be executed. The veto shoul
  6. Created a Function called callDispute to dispute operation.
  7. Created an event CallDisputed, will emit after the operation is Disputed.
  8. Created a Function callDisputeResolve, which will take the supreme court's judgement as input. It will either unpause the operation or cancel it based upon judgement.
- 9. Created an event CallDisputedResolved, will emit after the operation is Disputed.
+ 9. Created an event CallDisputedResolved, will emit after the disputed operation is resolved.
  10. Updated beforeCall() function so that the disputed operation can not be executed. 
