@@ -294,7 +294,7 @@ contract TimelockController is AccessControl {
      *
      * Requirements:
      *
-     * - the caller must have the 'executer' role.
+     * - the caller must have the 'executor' role.
      */
     function cancel(bytes32 id) public virtual onlyRole(CANCELLOR_ROLE) {
         require(isOperationPending(id), "TimelockController: operation cannot be cancelled");
