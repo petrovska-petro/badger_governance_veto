@@ -26,6 +26,7 @@ contract TimelockController is AccessControl {
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 public constant VETO_ROLE = keccak256("VETO_ROLE");
     bytes32 public constant SUPREMECOURT_ROLE = keccak256("SUPREMECOURT_ROLE");
+    bytes32 public constant CANCELLOR_ROLE = keccak256("CANCELLOR_ROLE");
     uint256 internal constant _DONE_TIMESTAMP = uint256(1);
 
     mapping(bytes32 => uint256) private _timestamps;
@@ -81,13 +82,15 @@ contract TimelockController is AccessControl {
         address[] memory proposers,
         address[] memory executors,
         address[] memory vetos,
-        address[] memory supremecourts 
+        address[] memory supremecourts,
+        address[] memory cancellors  
     ) {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(VETO_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(SUPREMECOURT_ROLE, TIMELOCK_ADMIN_ROLE);
+        _setRoleAdmin(CANCELLOR_ROLE, TIMELOCK_ADMIN_ROLE);
         // deployer + self administration
         _setupRole(TIMELOCK_ADMIN_ROLE, _msgSender());
         _setupRole(TIMELOCK_ADMIN_ROLE, address(this));
@@ -110,6 +113,11 @@ contract TimelockController is AccessControl {
         // register supremecourts
         for (uint256 i = 0; i < supremecourts.length; ++i) {
             _setupRole(SUPREMECOURT_ROLE, supremecourts[i]);
+        }
+
+        // register cancellors
+        for (uint256 i = 0; i < cancellors.length; ++i) {
+            _setupRole(CANCELLOR_ROLE, cancellors[i]);
         }
 
         _minDelay = minDelay;
@@ -277,7 +285,7 @@ contract TimelockController is AccessControl {
      *
      * - the caller must have the 'executer' role.
      */
-    function cancel(bytes32 id) public virtual onlyRole(EXECUTOR_ROLE) {
+    function cancel(bytes32 id) public virtual onlyRole(CANCELLOR_ROLE) {
         require(isOperationPending(id), "TimelockController: operation cannot be cancelled");
         delete _timestamps[id];
 
