@@ -56,7 +56,7 @@ contract TimelockController is AccessControl {
     /** 
      * @dev Emitted when an operation `id` is paused by VETO
      */
-    event FlaggedOperation(bytes32 indexed id);
+    event CallDisputed(bytes32 indexed id);
 
 
     /**
@@ -142,7 +142,7 @@ contract TimelockController is AccessControl {
      */
     receive() external payable {}
 
-    function getFlagStatus(bytes32 id) public view returns (uint16 paused){
+    function getDisputeStatus(bytes32 id) public view returns (uint16 paused){
         return _paused[id] ;
     }
     /**
@@ -316,22 +316,22 @@ contract TimelockController is AccessControl {
     }
 
     /**
-     * @dev flagOperation to pause an (pending or ready) operation .
+     * @dev callDispute to pause an (pending or ready) operation .
      *
      *
      * Requirements:
      *
      * - the caller must have the 'veto' role.
      */
-    function flagOperation(bytes32 id) public virtual onlyRole(VETO_ROLE){
+    function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE){
         require(isOperationPending(id),"TimelockController: operation is done, can not be paused");
-        require(getFlagStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
+        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
         _paused[id] = 1 ;
-        emit FlaggedOperation(id);
+        emit CallDisputed(id);
     }
 
     /**
-     * @dev afterFlagOperation to (cancel or execute) a paused operation based on supreme court judgement .
+     * @dev afterCallDisputed to (cancel or execute) a paused operation based on supreme court judgement .
      * @param id operation id
      * @param supremeCourtResponse is judgement returned from supreme court contract, true means veto is successful 
      *       
@@ -339,8 +339,8 @@ contract TimelockController is AccessControl {
      *
      * - the caller must have the 'supremecourt' role.
      */
-    function afterFlagOperation(bytes32 id, bool supremeCourtResponse) public onlyRole(SUPREMECOURT_ROLE) {
-        require(getFlagStatus(id)==1 , "TimelockController: operation is not paused");
+    function afterCallDisputed(bytes32 id, bool supremeCourtResponse) public onlyRole(SUPREMECOURT_ROLE) {
+        require(getDisputeStatus(id)==1 , "TimelockController: operation is not paused");
         if(supremeCourtResponse){
             delete _timestamps[id];
             emit Cancelled(id);
@@ -382,7 +382,7 @@ contract TimelockController is AccessControl {
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
         require(isOperationReady(id), "TimelockController: operation is not ready");
-        require(getFlagStatus(id)!=1 , "TimelockController: operation is paused can not be executed");
+        require(getDisputeStatus(id)!=1 , "TimelockController: operation is paused can not be executed");
         require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
     }
 
