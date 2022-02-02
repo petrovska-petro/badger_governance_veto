@@ -333,15 +333,15 @@ contract TimelockController is AccessControl {
     /**
      * @dev afterCallDisputed to (cancel or execute) a paused operation based on supreme court judgement .
      * @param id operation id
-     * @param supremeCourtResponse is judgement returned from supreme court contract, true means veto is successful 
-     *       
+     * @param ruling is judgement returned from supreme court contract, true means veto is successful 
+     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).      
      * Requirements:
      *
      * - the caller must have the 'supremecourt' role.
      */
-    function afterCallDisputed(bytes32 id, bool supremeCourtResponse) public onlyRole(SUPREMECOURT_ROLE) {
+    function afterCallDisputed(bytes32 id, bool ruling, bytes memory data) public onlyRole(SUPREMECOURT_ROLE) {
         require(getDisputeStatus(id)==1 , "TimelockController: operation is not paused");
-        if(supremeCourtResponse){
+        if(ruling){
             delete _timestamps[id];
             emit Cancelled(id);
         }
