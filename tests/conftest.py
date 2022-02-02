@@ -9,21 +9,29 @@ import pytest
 @pytest.fixture()
 def deploy():
     deployer = accounts[0]
-    deployedTC = TimelockController.deploy(0, [deployer], [deployer], [deployer], {'from': deployer})
+    proposer = accounts[1]
+    executor = accounts[2]
+    veto = accounts[3]
+    supremecourt = accounts[4]
+    cancellor = accounts[5]
+    
+    deployedTC = TimelockController.deploy(0, [proposer], [executor], [veto], [supremecourt], [cancellor] , {'from': deployer})
     return DotMap(
         contract = deployedTC,
         deployer = deployer,
-        proposer = deployer,
-        executer = deployer,
-        veto = deployer
+        proposer = proposer,
+        executor = executor,
+        veto = veto,
+        supremecourt = supremecourt,
+        cancellor = cancellor
     )
 
-# fixture to create a dummy operation so that we can test flagOperation on this operation
+# fixture to create a dummy operation so that we can test callDispute on this operation
 @pytest.fixture()
 def random_operation():
     # the values I have taken from OpenZepplin tests
     return DotMap(
-        target = accounts[1],
+        target = accounts[6],
         value = 0,
         data = '0x13e414de',
         predecessor=0,
@@ -46,10 +54,10 @@ def schedule_operation(deploy, random_operation):
     id = contract.hashOperation(target, value, data, predecessor, salt)
     return id 
 
-#fixture to flag an operation
+#fixture to dispute an operation
 @pytest.fixture()
-def flag_operation(deploy, schedule_operation):
+def dispute_operation(deploy, schedule_operation):
     id = schedule_operation
     contract = deploy.contract
-    contract.flagOperation(id, {'from': deploy.veto})
+    contract.callDispute(id, {'from': deploy.veto})
     return id 
