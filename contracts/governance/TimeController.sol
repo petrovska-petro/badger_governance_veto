@@ -21,7 +21,8 @@ import "../access/AccessControl.sol";
  * _Available since v3.3._
  */
 contract TimelockController is AccessControl {
-    bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
+    bytes32 public constant TIMELOCK_ADMIN_ROLE =
+        keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
     bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
     bytes32 public constant VETO_ROLE = keccak256("VETO_ROLE");
@@ -35,14 +36,13 @@ contract TimelockController is AccessControl {
     uint256 private _minDelay;
 
     /**
-     * @dev disputed is mapping which tells if the operation is disputed or can be disputed. 
+     * @dev disputed is mapping which tells if the operation is disputed or can be disputed.
      * 0 => is not disputed and can be disputed
      * 1 => disputed
-     * 2 => not disputed and can not be disputed, needed as if an operation is disputed once and 
-     *      supreme court rejects it, it can not be disputed again. 
+     * 2 => not disputed and can not be disputed, needed as if an operation is disputed once and
+     *      supreme court rejects it, it can not be disputed again.
      */
     mapping(bytes32 => uint16) public _disputed;
-    
 
     /**
      * @dev Emitted when a call is scheduled as part of operation `id`.
@@ -57,11 +57,16 @@ contract TimelockController is AccessControl {
         uint256 delay
     );
 
-    
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
      */
-    event CallExecuted(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data);
+    event CallExecuted(
+        bytes32 indexed id,
+        uint256 indexed index,
+        address target,
+        uint256 value,
+        bytes data
+    );
 
     /**
      * @dev Emitted when operation `id` is cancelled.
@@ -73,17 +78,15 @@ contract TimelockController is AccessControl {
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
 
-    /** 
+    /**
      * @dev Emitted when an operation `id` is disputed by VETO
      */
     event CallDisputed(bytes32 indexed id);
 
-    /** 
-     * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT 
+    /**
+     * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT
      */
     event CallDisputedResolved(bytes32 indexed id, bool ruling, bytes data);
-
-
 
     /**
      * @dev Initializes the contract with a given `minDelay`.
@@ -94,7 +97,7 @@ contract TimelockController is AccessControl {
         address[] memory executors,
         address[] memory vetos,
         address[] memory supremecourts,
-        address[] memory cancellors  
+        address[] memory cancellors
     ) {
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -153,28 +156,48 @@ contract TimelockController is AccessControl {
      */
     receive() external payable {}
 
-    function getDisputeStatus(bytes32 id) public view returns (uint16 disputed){
-        return _disputed[id] ;
+    function getDisputeStatus(bytes32 id)
+        public
+        view
+        returns (uint16 disputed)
+    {
+        return _disputed[id];
     }
+
     /**
      * @dev Returns whether an id correspond to a registered operation. This
      * includes both Pending, Ready and Done operations.
      */
-    function isOperation(bytes32 id) public view virtual returns (bool pending) {
+    function isOperation(bytes32 id)
+        public
+        view
+        virtual
+        returns (bool pending)
+    {
         return getTimestamp(id) > 0;
     }
 
     /**
      * @dev Returns whether an operation is pending or not.
      */
-    function isOperationPending(bytes32 id) public view virtual returns (bool pending) {
+    function isOperationPending(bytes32 id)
+        public
+        view
+        virtual
+        returns (bool pending)
+    {
         return getTimestamp(id) > _DONE_TIMESTAMP;
     }
 
     /**
      * @dev Returns whether an operation is ready or not.
      */
-    function isOperationReady(bytes32 id) public view virtual returns (bool ready) {
+    function isOperationReady(bytes32 id)
+        public
+        view
+        virtual
+        returns (bool ready)
+    {
         uint256 timestamp = getTimestamp(id);
         return timestamp > _DONE_TIMESTAMP && timestamp <= block.timestamp;
     }
@@ -182,7 +205,12 @@ contract TimelockController is AccessControl {
     /**
      * @dev Returns whether an operation is done or not.
      */
-    function isOperationDone(bytes32 id) public view virtual returns (bool done) {
+    function isOperationDone(bytes32 id)
+        public
+        view
+        virtual
+        returns (bool done)
+    {
         return getTimestamp(id) == _DONE_TIMESTAMP;
     }
 
@@ -190,7 +218,12 @@ contract TimelockController is AccessControl {
      * @dev Returns the timestamp at with an operation becomes ready (0 for
      * unset operations, 1 for done operations).
      */
-    function getTimestamp(bytes32 id) public view virtual returns (uint256 timestamp) {
+    function getTimestamp(bytes32 id)
+        public
+        view
+        virtual
+        returns (uint256 timestamp)
+    {
         return _timestamps[id];
     }
 
@@ -270,13 +303,33 @@ contract TimelockController is AccessControl {
         bytes32 salt,
         uint256 delay
     ) public virtual onlyRole(PROPOSER_ROLE) {
-        require(targets.length == values.length, "TimelockController: length mismatch");
-        require(targets.length == datas.length, "TimelockController: length mismatch");
+        require(
+            targets.length == values.length,
+            "TimelockController: length mismatch"
+        );
+        require(
+            targets.length == datas.length,
+            "TimelockController: length mismatch"
+        );
 
-        bytes32 id = hashOperationBatch(targets, values, datas, predecessor, salt);
+        bytes32 id = hashOperationBatch(
+            targets,
+            values,
+            datas,
+            predecessor,
+            salt
+        );
         _schedule(id, delay);
         for (uint256 i = 0; i < targets.length; ++i) {
-            emit CallScheduled(id, i, targets[i], values[i], datas[i], predecessor, delay);
+            emit CallScheduled(
+                id,
+                i,
+                targets[i],
+                values[i],
+                datas[i],
+                predecessor,
+                delay
+            );
         }
     }
 
@@ -284,8 +337,14 @@ contract TimelockController is AccessControl {
      * @dev Schedule an operation that is to becomes valid after a given delay.
      */
     function _schedule(bytes32 id, uint256 delay) private {
-        require(!isOperation(id), "TimelockController: operation already scheduled");
-        require(delay >= getMinDelay(), "TimelockController: insufficient delay");
+        require(
+            !isOperation(id),
+            "TimelockController: operation already scheduled"
+        );
+        require(
+            delay >= getMinDelay(),
+            "TimelockController: insufficient delay"
+        );
         _timestamps[id] = block.timestamp + delay;
     }
 
@@ -297,13 +356,15 @@ contract TimelockController is AccessControl {
      * - the caller must have the 'executor' role.
      */
     function cancel(bytes32 id) public virtual onlyRole(CANCELLOR_ROLE) {
-        require(isOperationPending(id), "TimelockController: operation cannot be cancelled");
+        require(
+            isOperationPending(id),
+            "TimelockController: operation cannot be cancelled"
+        );
         delete _timestamps[id];
 
         emit Cancelled(id);
     }
 
-    
     /**
      * @dev Execute an (ready) operation containing a single transaction.
      *
@@ -326,7 +387,6 @@ contract TimelockController is AccessControl {
         _afterCall(id);
     }
 
-
     /**
      * @dev Execute an (ready) operation containing a batch of transactions.
      *
@@ -343,10 +403,22 @@ contract TimelockController is AccessControl {
         bytes32 predecessor,
         bytes32 salt
     ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {
-        require(targets.length == values.length, "TimelockController: length mismatch");
-        require(targets.length == datas.length, "TimelockController: length mismatch");
+        require(
+            targets.length == values.length,
+            "TimelockController: length mismatch"
+        );
+        require(
+            targets.length == datas.length,
+            "TimelockController: length mismatch"
+        );
 
-        bytes32 id = hashOperationBatch(targets, values, datas, predecessor, salt);
+        bytes32 id = hashOperationBatch(
+            targets,
+            values,
+            datas,
+            predecessor,
+            salt
+        );
         _beforeCall(id, predecessor);
         for (uint256 i = 0; i < targets.length; ++i) {
             _call(id, i, targets[i], values[i], datas[i]);
@@ -358,16 +430,28 @@ contract TimelockController is AccessControl {
      * @dev Checks before execution of an operation's calls.
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
-        require(isOperationReady(id), "TimelockController: operation is not ready");
-        require(getDisputeStatus(id)!=1 , "TimelockController: operation is disputed can not be executed");
-        require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
+        require(
+            isOperationReady(id),
+            "TimelockController: operation is not ready"
+        );
+        require(
+            getDisputeStatus(id) != 1,
+            "TimelockController: operation is disputed so it can not be executed"
+        );
+        require(
+            predecessor == bytes32(0) || isOperationDone(predecessor),
+            "TimelockController: missing dependency"
+        );
     }
 
     /**
      * @dev Checks after execution of an operation's calls.
      */
     function _afterCall(bytes32 id) private {
-        require(isOperationReady(id), "TimelockController: operation is not ready");
+        require(
+            isOperationReady(id),
+            "TimelockController: operation is not ready"
+        );
         _timestamps[id] = _DONE_TIMESTAMP;
     }
 
@@ -400,11 +484,13 @@ contract TimelockController is AccessControl {
      * an operation where the timelock is the target and the data is the ABI-encoded call to this function.
      */
     function updateDelay(uint256 newDelay) external virtual {
-        require(msg.sender == address(this), "TimelockController: caller must be timelock");
+        require(
+            msg.sender == address(this),
+            "TimelockController: caller must be timelock"
+        );
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
     }
-
 
     /**
      * @dev callDispute to pause an (pending) operation .
@@ -413,31 +499,43 @@ contract TimelockController is AccessControl {
      *
      * - the caller must have the 'veto' role.
      */
-    function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE){
-        require(isOperationPending(id),"TimelockController: operation is either done or does not exist, can not be disputed");
-        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already disputed or can not be disputed");
-        _disputed[id] = 1 ;
+    function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE) {
+        require(
+            isOperationPending(id),
+            "TimelockController: operation is either done or does not exist, can not be disputed"
+        );
+        require(
+            getDisputeStatus(id) == 0,
+            "TimelockController: operation is either already disputed or can not be disputed"
+        );
+        _disputed[id] = 1;
         emit CallDisputed(id);
     }
 
     /**
-     * @dev afterCallDisputed to (cancel or execute) a disputed operation based on supreme court judgement .
+     * @dev callDisputeResolve to (cancel or execute) a disputed operation based on supreme court judgement .
      * @param id operation id
-     * @param ruling is judgement returned from supreme court contract, true means veto is successful 
-     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).      
-     * 
+     * @param ruling is judgement returned from supreme court contract, true means veto is successful
+     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).
+     *
      * Requirements:
      *
      * - the caller must have the 'supremecourt' role.
      */
-    function afterCallDisputed(bytes32 id, bool ruling, bytes calldata data) public onlyRole(SUPREMECOURT_ROLE) {
-        require(getDisputeStatus(id)==1 , "TimelockController: operation is not disputed");
-        if(ruling){
+    function callDisputeResolve(
+        bytes32 id,
+        bool ruling,
+        bytes calldata data
+    ) public onlyRole(SUPREMECOURT_ROLE) {
+        require(
+            getDisputeStatus(id) == 1,
+            "TimelockController: operation is not disputed"
+        );
+        if (ruling) {
             delete _timestamps[id];
             emit Cancelled(id);
-        }
-        else{
-            _disputed[id] = 2 ;
+        } else {
+            _disputed[id] = 2;
         }
         emit CallDisputedResolved(id, ruling, data);
     }
