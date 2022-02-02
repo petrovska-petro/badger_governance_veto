@@ -53,12 +53,7 @@ contract TimelockController is AccessControl {
         uint256 delay
     );
 
-    /** 
-     * @dev Emitted when an operation `id` is paused by VETO
-     */
-    event CallDisputed(bytes32 indexed id);
-
-
+    
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
      */
@@ -73,6 +68,18 @@ contract TimelockController is AccessControl {
      * @dev Emitted when the minimum delay for future operations is modified.
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
+
+    /** 
+     * @dev Emitted when an operation `id` is disputed by VETO
+     */
+    event CallDisputed(bytes32 indexed id);
+
+    /** 
+     * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT 
+     */
+    event CallDisputedResolved(bytes32 indexed id, bool ruling, bytes data);
+
+
 
     /**
      * @dev Initializes the contract with a given `minDelay`.
@@ -315,40 +322,6 @@ contract TimelockController is AccessControl {
         _afterCall(id);
     }
 
-    /**
-     * @dev callDispute to pause an (pending or ready) operation .
-     *
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'veto' role.
-     */
-    function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE){
-        require(isOperationPending(id),"TimelockController: operation is done, can not be paused");
-        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
-        _paused[id] = 1 ;
-        emit CallDisputed(id);
-    }
-
-    /**
-     * @dev afterCallDisputed to (cancel or execute) a paused operation based on supreme court judgement .
-     * @param id operation id
-     * @param ruling is judgement returned from supreme court contract, true means veto is successful 
-     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).      
-     * Requirements:
-     *
-     * - the caller must have the 'supremecourt' role.
-     */
-    function afterCallDisputed(bytes32 id, bool ruling, bytes memory data) public onlyRole(SUPREMECOURT_ROLE) {
-        require(getDisputeStatus(id)==1 , "TimelockController: operation is not paused");
-        if(ruling){
-            delete _timestamps[id];
-            emit Cancelled(id);
-        }
-        else{
-            _paused[id] = 2 ;
-        }
-    }
 
     /**
      * @dev Execute an (ready) operation containing a batch of transactions.
@@ -426,5 +399,42 @@ contract TimelockController is AccessControl {
         require(msg.sender == address(this), "TimelockController: caller must be timelock");
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
+    }
+
+
+    /**
+     * @dev callDispute to pause an (pending or ready) operation .
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'veto' role.
+     */
+    function callDispute(bytes32 id) public virtual onlyRole(VETO_ROLE){
+        require(isOperationPending(id),"TimelockController: operation is done, can not be paused");
+        require(getDisputeStatus(id)==0 , "TimelockController: operation is either already paused or can not be paused");
+        _paused[id] = 1 ;
+        emit CallDisputed(id);
+    }
+
+    /**
+     * @dev afterCallDisputed to (cancel or execute) a paused operation based on supreme court judgement .
+     * @param id operation id
+     * @param ruling is judgement returned from supreme court contract, true means veto is successful 
+     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).      
+     * 
+     * Requirements:
+     *
+     * - the caller must have the 'supremecourt' role.
+     */
+    function afterCallDisputed(bytes32 id, bool ruling, bytes calldata data) public onlyRole(SUPREMECOURT_ROLE) {
+        require(getDisputeStatus(id)==1 , "TimelockController: operation is not paused");
+        if(ruling){
+            delete _timestamps[id];
+            emit Cancelled(id);
+        }
+        else{
+            _paused[id] = 2 ;
+        }
+        emit CallDisputedResolved(id, ruling, data);
     }
 }
