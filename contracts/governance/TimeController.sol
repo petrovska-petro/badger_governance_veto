@@ -73,7 +73,7 @@ contract TimelockController is AccessControl {
     /**
      * @dev Emitted when operation `id` is cancelled.
      */
-    event Cancelled(bytes32 indexed id);
+    event Cancelled(bytes32 indexed id, address cancellor);
 
     /**
      * @dev Emitted when the minimum delay for future operations is modified.
@@ -83,7 +83,7 @@ contract TimelockController is AccessControl {
     /**
      * @dev Emitted when an operation `id` is disputed by VETO
      */
-    event CallDisputed(bytes32 indexed id);
+    event CallDisputed(bytes32 indexed id, address veto);
 
     /**
      * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT
@@ -374,7 +374,7 @@ contract TimelockController is AccessControl {
         );
         delete _timestamps[id];
 
-        emit Cancelled(id);
+        emit Cancelled(id, msg.sender);
     }
 
     /**
@@ -521,7 +521,7 @@ contract TimelockController is AccessControl {
             "TimelockController: operation is either already disputed or can not be disputed"
         );
         _disputed[id] = 1;
-        emit CallDisputed(id);
+        emit CallDisputed(id, msg.sender);
     }
 
     /**
@@ -545,7 +545,7 @@ contract TimelockController is AccessControl {
         );
         if (ruling) {
             delete _timestamps[id];
-            emit Cancelled(id);
+            emit Cancelled(id, msg.sender);
         } else {
             _disputed[id] = 2;
         }
