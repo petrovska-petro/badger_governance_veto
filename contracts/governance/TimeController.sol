@@ -54,7 +54,8 @@ contract TimelockController is AccessControl {
         uint256 value,
         bytes data,
         bytes32 predecessor,
-        uint256 delay
+        uint256 delay,
+        address proposer
     );
 
     /**
@@ -283,7 +284,16 @@ contract TimelockController is AccessControl {
     ) public virtual onlyRole(PROPOSER_ROLE) {
         bytes32 id = hashOperation(target, value, data, predecessor, salt);
         _schedule(id, delay);
-        emit CallScheduled(id, 0, target, value, data, predecessor, delay);
+        emit CallScheduled(
+            id,
+            0,
+            target,
+            value,
+            data,
+            predecessor,
+            delay,
+            msg.sender
+        );
     }
 
     /**
@@ -328,7 +338,8 @@ contract TimelockController is AccessControl {
                 values[i],
                 datas[i],
                 predecessor,
-                delay
+                delay,
+                msg.sender
             );
         }
     }
