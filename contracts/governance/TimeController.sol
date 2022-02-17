@@ -66,7 +66,8 @@ contract TimelockController is AccessControl {
         uint256 indexed index,
         address target,
         uint256 value,
-        bytes data
+        bytes data,
+        address executor
     );
 
     /**
@@ -481,7 +482,7 @@ contract TimelockController is AccessControl {
         (bool success, ) = target.call{value: value}(data);
         require(success, "TimelockController: underlying transaction reverted");
 
-        emit CallExecuted(id, index, target, value, data);
+        emit CallExecuted(id, index, target, value, data, msg.sender);
     }
 
     /**
