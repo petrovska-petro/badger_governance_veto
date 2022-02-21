@@ -55,7 +55,8 @@ contract TimelockController is AccessControl {
         bytes data,
         bytes32 predecessor,
         uint256 delay,
-        address proposer
+        address sender,
+        bytes32 status
     );
 
     /**
@@ -67,13 +68,14 @@ contract TimelockController is AccessControl {
         address target,
         uint256 value,
         bytes data,
-        address executor
+        address sender,
+        bytes32 status
     );
 
     /**
      * @dev Emitted when operation `id` is cancelled.
      */
-    event Cancelled(bytes32 indexed id, address cancellor);
+    event Cancelled(bytes32 indexed id, address sender, bytes32 status);
 
     /**
      * @dev Emitted when the minimum delay for future operations is modified.
@@ -83,12 +85,18 @@ contract TimelockController is AccessControl {
     /**
      * @dev Emitted when an operation `id` is disputed by VETO
      */
-    event CallDisputed(bytes32 indexed id, address veto);
+    event CallDisputed(bytes32 indexed id, address sender, bytes32 status);
 
     /**
      * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT
      */
-    event CallDisputedResolved(bytes32 indexed id, bool ruling, bytes data);
+    event CallDisputedResolved(
+        bytes32 indexed id,
+        bool ruling,
+        bytes data,
+        address sender,
+        bytes32 status
+    );
 
     /**
      * @dev Initializes the contract with a given `minDelay`.
@@ -293,7 +301,8 @@ contract TimelockController is AccessControl {
             data,
             predecessor,
             delay,
-            msg.sender
+            msg.sender,
+            "Proposed"
         );
     }
 
@@ -340,7 +349,8 @@ contract TimelockController is AccessControl {
                 datas[i],
                 predecessor,
                 delay,
-                msg.sender
+                msg.sender,
+                "Proposed"
             );
         }
     }
@@ -374,7 +384,7 @@ contract TimelockController is AccessControl {
         );
         delete _timestamps[id];
 
-        emit Cancelled(id, msg.sender);
+        emit Cancelled(id, msg.sender, "Cancelled");
     }
 
     /**
@@ -482,7 +492,15 @@ contract TimelockController is AccessControl {
         (bool success, ) = target.call{value: value}(data);
         require(success, "TimelockController: underlying transaction reverted");
 
-        emit CallExecuted(id, index, target, value, data, msg.sender);
+        emit CallExecuted(
+            id,
+            index,
+            target,
+            value,
+            data,
+            msg.sender,
+            "Executed"
+        );
     }
 
     /**
@@ -521,7 +539,7 @@ contract TimelockController is AccessControl {
             "TimelockController: operation is either already disputed or can not be disputed"
         );
         _disputed[id] = 1;
-        emit CallDisputed(id, msg.sender);
+        emit CallDisputed(id, msg.sender, "Vetoed");
     }
 
     /**
@@ -545,10 +563,16 @@ contract TimelockController is AccessControl {
         );
         if (ruling) {
             delete _timestamps[id];
-            emit Cancelled(id, msg.sender);
+            emit Cancelled(id, msg.sender, "Cancelled");
         } else {
             _disputed[id] = 2;
         }
-        emit CallDisputedResolved(id, ruling, data);
+        emit CallDisputedResolved(
+            id,
+            ruling,
+            data,
+            msg.sender,
+            "Veto Resolved"
+        );
     }
 }
