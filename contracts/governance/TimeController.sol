@@ -56,7 +56,8 @@ contract TimelockController is AccessControl {
         bytes32 predecessor,
         uint256 delay,
         address sender,
-        bytes32 status
+        string status,
+        string signature
     );
 
     /**
@@ -69,13 +70,13 @@ contract TimelockController is AccessControl {
         uint256 value,
         bytes data,
         address sender,
-        bytes32 status
+        string status
     );
 
     /**
      * @dev Emitted when operation `id` is cancelled.
      */
-    event Cancelled(bytes32 indexed id, address sender, bytes32 status);
+    event Cancelled(bytes32 indexed id, address sender, string status);
 
     /**
      * @dev Emitted when the minimum delay for future operations is modified.
@@ -85,7 +86,7 @@ contract TimelockController is AccessControl {
     /**
      * @dev Emitted when an operation `id` is disputed by VETO
      */
-    event CallDisputed(bytes32 indexed id, address sender, bytes32 status);
+    event CallDisputed(bytes32 indexed id, address sender, string status);
 
     /**
      * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT
@@ -95,7 +96,7 @@ contract TimelockController is AccessControl {
         bool ruling,
         bytes data,
         address sender,
-        bytes32 status
+        string status
     );
 
     /**
@@ -286,6 +287,7 @@ contract TimelockController is AccessControl {
     function schedule(
         address target,
         uint256 value,
+        string calldata signature,
         bytes calldata data,
         bytes32 predecessor,
         bytes32 salt,
@@ -302,7 +304,8 @@ contract TimelockController is AccessControl {
             predecessor,
             delay,
             msg.sender,
-            "Proposed"
+            "Proposed",
+            signature
         );
     }
 
@@ -319,6 +322,7 @@ contract TimelockController is AccessControl {
         address[] calldata targets,
         uint256[] calldata values,
         bytes[] calldata datas,
+        string[] calldata signatures,
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
@@ -350,7 +354,8 @@ contract TimelockController is AccessControl {
                 predecessor,
                 delay,
                 msg.sender,
-                "Proposed"
+                "Proposed",
+                signatures[i]
             );
         }
     }
