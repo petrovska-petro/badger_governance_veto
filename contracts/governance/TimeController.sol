@@ -56,8 +56,7 @@ contract TimelockController is AccessControl {
         bytes32 predecessor,
         uint256 delay,
         address sender,
-        string status,
-        string signature
+        string status
     );
 
     /**
@@ -287,7 +286,7 @@ contract TimelockController is AccessControl {
     function schedule(
         address target,
         uint256 value,
-        string calldata signature,
+        // string calldata signature,
         bytes calldata data,
         bytes32 predecessor,
         bytes32 salt,
@@ -304,8 +303,8 @@ contract TimelockController is AccessControl {
             predecessor,
             delay,
             msg.sender,
-            "Proposed",
-            signature
+            "Proposed"
+            // "signature"
         );
     }
 
@@ -322,7 +321,7 @@ contract TimelockController is AccessControl {
         address[] calldata targets,
         uint256[] calldata values,
         bytes[] calldata datas,
-        string[] calldata signatures,
+        // string[] calldata signatures,
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
@@ -354,8 +353,8 @@ contract TimelockController is AccessControl {
                 predecessor,
                 delay,
                 msg.sender,
-                "Proposed",
-                signatures[i]
+                "Proposed"
+                // "signatures"
             );
         }
     }

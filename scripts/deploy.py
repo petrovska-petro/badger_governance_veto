@@ -29,7 +29,7 @@ def main():
     deployedTC.schedule(
         target1,
         value1,
-        signature1,
+        # signature1,
         data1,
         predecessor1,
         salt1,
@@ -46,7 +46,7 @@ def main():
     deployedTC.schedule(
         target2,
         value2,
-        signature2,
+        # signature2,
         data2,
         predecessor2,
         salt2,
@@ -65,7 +65,7 @@ def main():
     deployedTC.schedule(
         target3,
         value3,
-        signature3,
+        # signature3,
         data3,
         predecessor3,
         salt3,
