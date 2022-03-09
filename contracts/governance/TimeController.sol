@@ -54,7 +54,7 @@ contract TimelockController is AccessControl {
         uint256 value,
         bytes data,
         bytes32 predecessor,
-        uint256 delay,
+        uint256 readyTime,
         address sender,
         string status
     );
