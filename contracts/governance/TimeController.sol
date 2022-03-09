@@ -301,7 +301,7 @@ contract TimelockController is AccessControl {
             value,
             data,
             predecessor,
-            delay,
+            getTimestamp(id),
             msg.sender,
             "Proposed"
             // "signature"
@@ -351,7 +351,7 @@ contract TimelockController is AccessControl {
                 values[i],
                 datas[i],
                 predecessor,
-                delay,
+                getTimestamp(id),
                 msg.sender,
                 "Proposed"
                 // "signatures"
