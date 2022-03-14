@@ -304,7 +304,6 @@ contract TimelockController is AccessControl {
             getTimestamp(id),
             msg.sender,
             "Proposed"
-            // "signature"
         );
     }
 
@@ -354,7 +353,6 @@ contract TimelockController is AccessControl {
                 getTimestamp(id),
                 msg.sender,
                 "Proposed"
-                // "signatures"
             );
         }
     }
