@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (governance/TimelockController.sol)
-
 pragma solidity ^0.8.0;
 
 import "../access/AccessControl.sol";
@@ -21,6 +19,27 @@ import "../access/AccessControl.sol";
  * _Available since v3.3._
  */
 contract TimelockController is AccessControl {
+    /// @dev dispute state enum is tells if the operation is disputed or can be disputed.
+    /// 0 => is not disputed and can be disputed
+    /// 1 => disputed
+    /// 2 => not disputed and can not be disputed, needed as if an operation is disputed once and
+    /// supreme court rejects it, it can not be disputed again.
+    enum DisputeState {
+        NOT_DISPUTED,
+        DISPUTED,
+        REJECTED
+    }
+
+    enum SupremeRuling {
+        ACCEPT_VETO,
+        REJECT_VETO
+    }
+
+    struct TxInfo {
+        uint128 timestamp;
+        DisputeState state;
+    }
+
     bytes32 public constant TIMELOCK_ADMIN_ROLE =
         keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
@@ -29,20 +48,11 @@ contract TimelockController is AccessControl {
     bytes32 public constant SUPREMECOURT_ROLE = keccak256("SUPREMECOURT_ROLE");
     bytes32 public constant CANCELLOR_ROLE = keccak256("CANCELLOR_ROLE");
 
-    uint256 internal constant _DONE_TIMESTAMP = uint256(1);
+    uint128 internal constant _DONE_TIMESTAMP = uint128(1);
 
-    mapping(bytes32 => uint256) private _timestamps;
+    mapping(bytes32 => TxInfo) private _transactionInfo;
 
     uint256 private _minDelay;
-
-    /**
-     * @dev disputed is mapping which tells if the operation is disputed or can be disputed.
-     * 0 => is not disputed and can be disputed
-     * 1 => disputed
-     * 2 => not disputed and can not be disputed, needed as if an operation is disputed once and
-     *      supreme court rejects it, it can not be disputed again.
-     */
-    mapping(bytes32 => uint16) public _disputed;
 
     /**
      * @dev Emitted when a call is scheduled as part of operation `id`.
@@ -78,6 +88,11 @@ contract TimelockController is AccessControl {
     event Cancelled(bytes32 indexed id, address sender, string status);
 
     /**
+     * @dev Emitted when operation `id` is rejected by supreme court.
+     */
+    event Rejected(bytes32 indexed id, address sender, string status);
+
+    /**
      * @dev Emitted when the minimum delay for future operations is modified.
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
@@ -92,7 +107,7 @@ contract TimelockController is AccessControl {
      */
     event CallDisputedResolved(
         bytes32 indexed id,
-        bool ruling,
+        SupremeRuling ruling,
         bytes data,
         address sender,
         string status
@@ -115,8 +130,8 @@ contract TimelockController is AccessControl {
         _setRoleAdmin(VETO_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(SUPREMECOURT_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(CANCELLOR_ROLE, TIMELOCK_ADMIN_ROLE);
-        // deployer + self administration
-        _setupRole(TIMELOCK_ADMIN_ROLE, _msgSender());
+
+        // self administration
         _setupRole(TIMELOCK_ADMIN_ROLE, address(this));
 
         // register proposers
@@ -169,9 +184,9 @@ contract TimelockController is AccessControl {
     function getDisputeStatus(bytes32 id)
         public
         view
-        returns (uint16 disputed)
+        returns (DisputeState disputed)
     {
-        return _disputed[id];
+        return _transactionInfo[id].state;
     }
 
     /**
@@ -232,9 +247,9 @@ contract TimelockController is AccessControl {
         public
         view
         virtual
-        returns (uint256 timestamp)
+        returns (uint128 timestamp)
     {
-        return _timestamps[id];
+        return _transactionInfo[id].timestamp;
     }
 
     /**
@@ -369,7 +384,7 @@ contract TimelockController is AccessControl {
             delay >= getMinDelay(),
             "TimelockController: insufficient delay"
         );
-        _timestamps[id] = block.timestamp + delay;
+        _transactionInfo[id].timestamp = uint128(block.timestamp + delay);
     }
 
     /**
@@ -384,7 +399,7 @@ contract TimelockController is AccessControl {
             isOperationPending(id),
             "TimelockController: operation cannot be cancelled"
         );
-        delete _timestamps[id];
+        delete _transactionInfo[id];
 
         emit Cancelled(id, msg.sender, "Cancelled");
     }
@@ -459,7 +474,7 @@ contract TimelockController is AccessControl {
             "TimelockController: operation is not ready"
         );
         require(
-            getDisputeStatus(id) != 1,
+            getDisputeStatus(id) != DisputeState.DISPUTED,
             "TimelockController: operation is disputed so it can not be executed"
         );
         require(
@@ -476,7 +491,7 @@ contract TimelockController is AccessControl {
             isOperationReady(id),
             "TimelockController: operation is not ready"
         );
-        _timestamps[id] = _DONE_TIMESTAMP;
+        _transactionInfo[id].timestamp = _DONE_TIMESTAMP;
     }
 
     /**
@@ -537,10 +552,10 @@ contract TimelockController is AccessControl {
             "TimelockController: operation is either done or does not exist, can not be disputed"
         );
         require(
-            getDisputeStatus(id) == 0,
+            getDisputeStatus(id) == DisputeState.NOT_DISPUTED,
             "TimelockController: operation is either already disputed or can not be disputed"
         );
-        _disputed[id] = 1;
+        _transactionInfo[id].state = DisputeState.DISPUTED;
         emit CallDisputed(id, msg.sender, "Vetoed");
     }
 
@@ -556,18 +571,19 @@ contract TimelockController is AccessControl {
      */
     function callDisputeResolve(
         bytes32 id,
-        bool ruling,
+        SupremeRuling ruling,
         bytes calldata data
     ) public onlyRole(SUPREMECOURT_ROLE) {
         require(
-            getDisputeStatus(id) == 1,
+            getDisputeStatus(id) == DisputeState.DISPUTED,
             "TimelockController: operation is not disputed"
         );
-        if (ruling) {
-            delete _timestamps[id];
+        if (ruling == SupremeRuling.ACCEPT_VETO) {
+            delete _transactionInfo[id];
             emit Cancelled(id, msg.sender, "Cancelled");
         } else {
-            _disputed[id] = 2;
+            _transactionInfo[id].state = DisputeState.REJECTED;
+            emit Rejected(id, msg.sender, "Rejected");
         }
         emit CallDisputedResolved(
             id,
