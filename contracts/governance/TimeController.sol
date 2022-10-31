@@ -30,11 +30,16 @@ contract TimelockController is AccessControl {
         REJECTED
     }
 
+    /// @dev supreme ruling enum tells if a disputed operation is vetoed or reject
+    /// 0 => accept veto, then cancelling completly the operation and removing from mapping
+    /// 1 => reject the vetoed action and it can be executed normally after the delay
     enum SupremeRuling {
         ACCEPT_VETO,
         REJECT_VETO
     }
 
+    /// @dev used to hold timestamp of when tx can be executed or if completed `_DONE_TIMESTAMP`
+    /// and proposed tx state regarding if it is has being disputed, rejected or not-disputed
     struct TxInfo {
         uint128 timestamp;
         DisputeState state;
