@@ -84,6 +84,7 @@ def test_execution_with_predecessor(
         random_operation.predecessor,
         random_operation.salt,
         random_operation.delay,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -97,6 +98,7 @@ def test_execution_with_predecessor(
         predecessor_id,
         random_second_operation.salt,
         random_second_operation.delay,
+        random_second_operation.description,
         {"from": proposer},
     )
 

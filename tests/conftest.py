@@ -60,6 +60,7 @@ def random_operation():
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
         delay=0,
+        description="# Proposal ## Investment",
     )
 
 
@@ -72,6 +73,7 @@ def random_second_operation():
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
         delay=0,
+        description="# Proposal ## Fees Update",
     )
 
 
@@ -84,6 +86,7 @@ def random_broken_operation():
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
         delay=0,
+        description="# Proposal ## Emissions Update",
     )
 
 
@@ -97,7 +100,10 @@ def schedule_operation(timelock, random_operation, proposer):
     predecessor = random_operation.predecessor
     salt = random_operation.salt
     delay = random_operation.delay
-    timelock.schedule(target, value, data, predecessor, salt, delay, {"from": proposer})
+    description = random_operation.description
+    timelock.schedule(
+        target, value, data, predecessor, salt, delay, description, {"from": proposer}
+    )
     id = timelock.hashOperation(target, value, data, predecessor, salt)
     return id
 

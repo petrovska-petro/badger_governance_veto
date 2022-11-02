@@ -61,6 +61,7 @@ contract TimelockController is AccessControl {
 
     /**
      * @dev Emitted when a call is scheduled as part of operation `id`.
+     * NOTE: includes `description` to be able to fill-up UI with event emitted
      */
     event CallScheduled(
         bytes32 indexed id,
@@ -71,11 +72,13 @@ contract TimelockController is AccessControl {
         bytes32 predecessor,
         uint256 readyTime,
         address sender,
+        string description,
         string status
     );
 
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
+     * NOTE: does not emit `description` as it is not argument needed for executing
      */
     event CallExecuted(
         bytes32 indexed id,
@@ -306,11 +309,11 @@ contract TimelockController is AccessControl {
     function schedule(
         address target,
         uint256 value,
-        // string calldata signature,
         bytes calldata data,
         bytes32 predecessor,
         bytes32 salt,
-        uint256 delay
+        uint256 delay,
+        string memory description
     ) public virtual onlyRole(PROPOSER_ROLE) {
         bytes32 id = hashOperation(target, value, data, predecessor, salt);
         _schedule(id, delay);
@@ -323,6 +326,7 @@ contract TimelockController is AccessControl {
             predecessor,
             getTimestamp(id),
             msg.sender,
+            description,
             "Proposed"
         );
     }
@@ -340,10 +344,10 @@ contract TimelockController is AccessControl {
         address[] calldata targets,
         uint256[] calldata values,
         bytes[] calldata datas,
-        // string[] calldata signatures,
         bytes32 predecessor,
         bytes32 salt,
-        uint256 delay
+        uint256 delay,
+        string memory description
     ) public virtual onlyRole(PROPOSER_ROLE) {
         require(
             targets.length == values.length,
@@ -372,6 +376,7 @@ contract TimelockController is AccessControl {
                 predecessor,
                 getTimestamp(id),
                 msg.sender,
+                description,
                 "Proposed"
             );
         }

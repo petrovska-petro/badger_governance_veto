@@ -13,6 +13,7 @@ def test_batch_schedule_no_auth(timelock, random_operation, accounts):
             random_operation.predecessor,
             random_operation.salt,
             random_operation.delay,
+            random_operation.description,
             {"from": accounts[8]},
         )
 
@@ -29,6 +30,7 @@ def test_batch_schedule_min_delay(timelock, random_operation, proposer):
             random_operation.predecessor,
             random_operation.salt,
             NEW_DELAY - 500,
+            random_operation.description,
             {"from": proposer},
         )
 
@@ -43,6 +45,7 @@ def test_batch_schedule_mismatch_length(timelock, random_operation, proposer):
             random_operation.predecessor,
             random_operation.salt,
             0,
+            random_operation.description,
             {"from": proposer},
         )
 
@@ -55,6 +58,7 @@ def test_batch_schedule_mismatch_length(timelock, random_operation, proposer):
             random_operation.predecessor,
             random_operation.salt,
             0,
+            random_operation.description,
             {"from": proposer},
         )
 
@@ -67,6 +71,7 @@ def test_batch_schedule_same_operation(timelock, random_operation, proposer):
         random_operation.predecessor,
         random_operation.salt,
         0,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -78,6 +83,7 @@ def test_batch_schedule_same_operation(timelock, random_operation, proposer):
             random_operation.predecessor,
             random_operation.salt,
             0,
+            random_operation.description,
             {"from": proposer},
         )
 
@@ -90,6 +96,7 @@ def test_batch_schedule(timelock, random_operation, random_second_operation, pro
         random_operation.predecessor,
         random_operation.salt,
         0,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -126,6 +133,7 @@ def test_batch_execution_early(timelock, random_operation, proposer, executor):
         random_operation.predecessor,
         random_operation.salt,
         NEW_DELAY,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -165,6 +173,7 @@ def test_batch_execution_no_auth(timelock, random_operation, proposer, accounts)
         random_operation.predecessor,
         random_operation.salt,
         0,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -190,6 +199,7 @@ def test_batch_execution_mismatch_length(
         random_operation.predecessor,
         random_operation.salt,
         0,
+        random_operation.description,
         {"from": proposer},
     )
 
@@ -226,6 +236,7 @@ def test_batch_execution_tx_revert(
         random_broken_operation.predecessor,
         random_broken_operation.salt,
         0,
+        random_broken_operation.description,
         {"from": proposer},
     )
 
@@ -250,6 +261,7 @@ def test_batch_execution(
         random_operation.predecessor,
         random_operation.salt,
         0,
+        random_operation.description,
         {"from": proposer},
     )
 
