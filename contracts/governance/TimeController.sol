@@ -53,10 +53,12 @@ contract TimelockController is AccessControl {
     bytes32 public constant SUPREMECOURT_ROLE = keccak256("SUPREMECOURT_ROLE");
     bytes32 public constant CANCELLOR_ROLE = keccak256("CANCELLOR_ROLE");
 
+    uint256 public constant MINIMUM_DELAY = 2 days;
+    uint256 public constant MAXIMUM_DELAY = 30 days;
+
     uint128 internal constant _DONE_TIMESTAMP = uint128(1);
 
     mapping(bytes32 => TxInfo) private _transactionInfo;
-
     uint256 private _minDelay;
 
     /**
@@ -132,6 +134,15 @@ contract TimelockController is AccessControl {
         address[] memory supremecourts,
         address[] memory cancellors
     ) {
+        require(
+            minDelay >= MINIMUM_DELAY,
+            "TimelockController: delay must exceed minimum delay"
+        );
+        require(
+            minDelay <= MAXIMUM_DELAY,
+            "TimelockController: delay must not exceed maximum delay"
+        );
+
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -545,6 +556,15 @@ contract TimelockController is AccessControl {
             msg.sender == address(this),
             "TimelockController: caller must be timelock"
         );
+        require(
+            newDelay >= MINIMUM_DELAY,
+            "TimelockController: delay must exceed minimum delay"
+        );
+        require(
+            newDelay <= MAXIMUM_DELAY,
+            "TimelockController: delay must not exceed maximum delay"
+        );
+
         emit MinDelayChange(_minDelay, newDelay);
         _minDelay = newDelay;
     }

@@ -2,6 +2,9 @@ from brownie import accounts, TimelockController
 from dotmap import DotMap
 import pytest
 
+# NOTE: min delay is 2 days
+MIN_DELAY = 172_800
+
 
 @pytest.fixture
 def deployer():
@@ -37,7 +40,7 @@ def cancellor():
 @pytest.fixture()
 def timelock(deployer, proposer, executor, veto, supremecourt, cancellor):
     timelock = TimelockController.deploy(
-        0,
+        MIN_DELAY,
         [proposer],
         [executor],
         [veto],
@@ -59,7 +62,7 @@ def random_operation():
         data="0x13e414de",
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
-        delay=0,
+        delay=MIN_DELAY,
         description="# Proposal ## Investment",
     )
 
@@ -72,7 +75,7 @@ def random_second_operation():
         data="0x0e5c011e",
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
-        delay=0,
+        delay=MIN_DELAY,
         description="# Proposal ## Fees Update",
     )
 
@@ -85,7 +88,7 @@ def random_broken_operation():
         data="0x0e5c011e",
         predecessor=0,
         salt="0xc1059ed2dc130227aa1d1d539ac94c641306905c020436c636e19e3fab56fc7f",
-        delay=0,
+        delay=MIN_DELAY,
         description="# Proposal ## Emissions Update",
     )
 
@@ -112,5 +115,5 @@ def schedule_operation(timelock, random_operation, proposer):
 @pytest.fixture()
 def dispute_operation(timelock, schedule_operation, veto):
     id = schedule_operation
-    timelock.callDispute(id, {"from": veto})
-    return id
+    tx = timelock.callDispute(id, {"from": veto})
+    return id, tx.block_number

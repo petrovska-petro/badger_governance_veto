@@ -1,5 +1,7 @@
 from brownie import chain, reverts
 
+MIN_DELAY = 172_800
+
 
 def test_batch_schedule_no_auth(timelock, random_operation, accounts):
     PROPOSER_ROLE = timelock.PROPOSER_ROLE()
@@ -19,7 +21,7 @@ def test_batch_schedule_no_auth(timelock, random_operation, accounts):
 
 
 def test_batch_schedule_min_delay(timelock, random_operation, proposer):
-    NEW_DELAY = 5000
+    NEW_DELAY = MIN_DELAY * 2
     timelock.updateDelay(NEW_DELAY, {"from": timelock})
 
     with reverts("TimelockController: insufficient delay"):
@@ -44,7 +46,7 @@ def test_batch_schedule_mismatch_length(timelock, random_operation, proposer):
             [random_operation.data],
             random_operation.predecessor,
             random_operation.salt,
-            0,
+            MIN_DELAY,
             random_operation.description,
             {"from": proposer},
         )
@@ -57,7 +59,7 @@ def test_batch_schedule_mismatch_length(timelock, random_operation, proposer):
             [random_operation.data],
             random_operation.predecessor,
             random_operation.salt,
-            0,
+            MIN_DELAY,
             random_operation.description,
             {"from": proposer},
         )
@@ -70,7 +72,7 @@ def test_batch_schedule_same_operation(timelock, random_operation, proposer):
         [random_operation.data],
         random_operation.predecessor,
         random_operation.salt,
-        0,
+        MIN_DELAY,
         random_operation.description,
         {"from": proposer},
     )
@@ -82,7 +84,7 @@ def test_batch_schedule_same_operation(timelock, random_operation, proposer):
             [random_operation.data],
             random_operation.predecessor,
             random_operation.salt,
-            0,
+            MIN_DELAY,
             random_operation.description,
             {"from": proposer},
         )
@@ -95,7 +97,7 @@ def test_batch_schedule(timelock, random_operation, random_second_operation, pro
         [random_operation.data, random_second_operation.data],
         random_operation.predecessor,
         random_operation.salt,
-        0,
+        MIN_DELAY,
         random_operation.description,
         {"from": proposer},
     )
@@ -107,7 +109,7 @@ def test_batch_schedule(timelock, random_operation, random_second_operation, pro
 
     for event in schedule_events:
         id = event["id"]
-        assert timelock.getTimestamp(id) == block_timestamp
+        assert timelock.getTimestamp(id) == block_timestamp + MIN_DELAY
 
 
 def test_batch_execution_no_schedule(timelock, random_operation, executor):
@@ -123,7 +125,7 @@ def test_batch_execution_no_schedule(timelock, random_operation, executor):
 
 
 def test_batch_execution_early(timelock, random_operation, proposer, executor):
-    NEW_DELAY = 5000
+    NEW_DELAY = MIN_DELAY * 2
     timelock.updateDelay(NEW_DELAY, {"from": timelock})
 
     tx = timelock.scheduleBatch(
@@ -172,7 +174,7 @@ def test_batch_execution_no_auth(timelock, random_operation, proposer, accounts)
         [random_operation.data],
         random_operation.predecessor,
         random_operation.salt,
-        0,
+        MIN_DELAY,
         random_operation.description,
         {"from": proposer},
     )
@@ -198,7 +200,7 @@ def test_batch_execution_mismatch_length(
         [random_operation.data, random_second_operation.data],
         random_operation.predecessor,
         random_operation.salt,
-        0,
+        MIN_DELAY,
         random_operation.description,
         {"from": proposer},
     )
@@ -229,16 +231,20 @@ def test_batch_execution_mismatch_length(
 def test_batch_execution_tx_revert(
     timelock, random_broken_operation, proposer, executor
 ):
-    timelock.scheduleBatch(
+    tx = timelock.scheduleBatch(
         [random_broken_operation.target],
         [random_broken_operation.value],
         [random_broken_operation.data],
         random_broken_operation.predecessor,
         random_broken_operation.salt,
-        0,
+        MIN_DELAY,
         random_broken_operation.description,
         {"from": proposer},
     )
+
+    # mining further to test exec
+    block_timestamp = chain[tx.block_number].timestamp
+    chain.mine(timestamp=block_timestamp + MIN_DELAY * 2)
 
     with reverts("TimelockController: underlying transaction reverted"):
         timelock.executeBatch(
@@ -254,16 +260,20 @@ def test_batch_execution_tx_revert(
 def test_batch_execution(
     timelock, random_operation, random_second_operation, proposer, executor
 ):
-    timelock.scheduleBatch(
+    tx = timelock.scheduleBatch(
         [random_operation.target, random_second_operation.target],
         [random_operation.value, random_second_operation.value],
         [random_operation.data, random_second_operation.data],
         random_operation.predecessor,
         random_operation.salt,
-        0,
+        MIN_DELAY,
         random_operation.description,
         {"from": proposer},
     )
+
+    # mining further to test exec
+    block_timestamp = chain[tx.block_number].timestamp
+    chain.mine(timestamp=block_timestamp + MIN_DELAY)
 
     tx = timelock.executeBatch(
         [random_operation.target, random_second_operation.target],

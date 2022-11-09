@@ -1,4 +1,4 @@
-from brownie import reverts
+from brownie import reverts, chain
 
 
 def test_resolve_dispute_no_auth(
@@ -6,7 +6,7 @@ def test_resolve_dispute_no_auth(
 ):
     SUPREMECOURT_ROLE = timelock.SUPREMECOURT_ROLE()
     # dispute the operation
-    id = dispute_operation
+    id, _ = dispute_operation
 
     # received supereme court judgement as reject
     SUPREME_COURT_REJECT = 1
@@ -30,7 +30,7 @@ def test_execute_after_dispute(
     timelock, dispute_operation, random_operation, executor, supremecourt
 ):
     # dispute the operation
-    id = dispute_operation
+    id, block_number = dispute_operation
 
     # received supereme court judgement as reject
     SUPREME_COURT_REJECT = 1
@@ -38,6 +38,9 @@ def test_execute_after_dispute(
 
     # check the operation should not be disputed now
     assert timelock.getDisputeStatus(id) == 2
+
+    block_timestamp = chain[block_number].timestamp
+    chain.mine(timestamp=block_timestamp + (random_operation.delay * 2))
 
     # execute the operation
     timelock.execute(
@@ -58,7 +61,7 @@ def test_pause_after_veto_failed(
     timelock, dispute_operation, random_operation, veto, supremecourt
 ):
     # dispute the operation
-    id = dispute_operation
+    id, _ = dispute_operation
 
     # received supereme court judgement as reject
     SUPREME_COURT_REJECT = 1
@@ -91,7 +94,7 @@ def test_execution_with_predecessor(
     call_schedule_event = tx.events["CallScheduled"]
     predecessor_id = call_schedule_event["id"]
 
-    timelock.schedule(
+    tx = timelock.schedule(
         random_second_operation.target,
         random_second_operation.value,
         random_second_operation.data,
@@ -101,6 +104,9 @@ def test_execution_with_predecessor(
         random_second_operation.description,
         {"from": proposer},
     )
+
+    block_timestamp = chain[tx.block_number].timestamp
+    chain.mine(timestamp=block_timestamp + (random_second_operation.delay * 2))
 
     with reverts("TimelockController: missing dependency"):
         timelock.execute(
