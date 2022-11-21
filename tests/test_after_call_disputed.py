@@ -25,7 +25,7 @@ def test_veto_passed(timelock, supremecourt, dispute_operation):
     id, _ = dispute_operation
 
     ACCEPT_VETO = 0
-    timelock.callDisputeResolve(id, ACCEPT_VETO, "", {"from": supremecourt})
+    timelock.callDisputeResolve(id, ACCEPT_VETO, "# Agree!", {"from": supremecourt})
 
     # Operation should be cancelled
     assert timelock.isOperation(id) == False
@@ -36,6 +36,6 @@ def test_veto_failed(timelock, supremecourt, dispute_operation):
     id, _ = dispute_operation
 
     REJECT_VETO = 1
-    timelock.callDisputeResolve(id, REJECT_VETO, "", {"from": supremecourt})
+    timelock.callDisputeResolve(id, REJECT_VETO, "# Disagree!", {"from": supremecourt})
 
     assert timelock.getDisputeStatus(id) == 2

@@ -3,7 +3,7 @@ from brownie import reverts
 
 def test_cancel_operation(timelock, schedule_operation, cancellor):
     id = schedule_operation
-    tx = timelock.cancel(id, {"from": cancellor})
+    tx = timelock.cancel(id, "# Concerning tx!!", {"from": cancellor})
 
     cancel_event = tx.events["Cancelled"]
     assert len(cancel_event) > 0
@@ -14,7 +14,7 @@ def test_cancel_operation(timelock, schedule_operation, cancellor):
 
 def test_cancel_invalidad_operation(timelock, cancellor):
     with reverts("TimelockController: operation cannot be cancelled"):
-        timelock.cancel("0x", {"from": cancellor})
+        timelock.cancel("0x", "# Concerning tx!!", {"from": cancellor})
 
 
 def test_cancel_no_auth(timelock, schedule_operation, accounts):
@@ -23,4 +23,4 @@ def test_cancel_no_auth(timelock, schedule_operation, accounts):
 
     revert_msg = f"AccessControl: account {accounts[7].address.lower()} is missing role {CANCELLOR_ROLE}"
     with reverts(revert_msg):
-        timelock.cancel(id, {"from": accounts[7]})
+        timelock.cancel(id, "# Concerning tx!!", {"from": accounts[7]})
