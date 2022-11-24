@@ -34,7 +34,9 @@ def test_execute_after_dispute(
 
     # received supereme court judgement as reject
     SUPREME_COURT_REJECT = 1
-    timelock.callDisputeResolve(id, SUPREME_COURT_REJECT, "", {"from": supremecourt})
+    timelock.callDisputeResolve(
+        id, SUPREME_COURT_REJECT, "# Disagree!", {"from": supremecourt}
+    )
 
     # check the operation should not be disputed now
     assert timelock.getDisputeStatus(id) == 2
@@ -65,7 +67,9 @@ def test_pause_after_veto_failed(
 
     # received supereme court judgement as reject
     SUPREME_COURT_REJECT = 1
-    timelock.callDisputeResolve(id, SUPREME_COURT_REJECT, "", {"from": supremecourt})
+    timelock.callDisputeResolve(
+        id, SUPREME_COURT_REJECT, "# Disagree!", {"from": supremecourt}
+    )
     # check the operation should not be disputed now
     assert timelock.getDisputeStatus(id) == 2
 
@@ -116,4 +120,19 @@ def test_execution_with_predecessor(
             predecessor_id,
             random_second_operation.salt,
             {"from": executor},
+        )
+
+
+def test_overflow_delay(timelock, random_operation, proposer):
+    MAX_UINT_128 = 2**128 - 1
+    with reverts("TimelockController: value doesn't fit in 128 bits"):
+        timelock.schedule(
+            random_operation.target,
+            random_operation.value,
+            random_operation.data,
+            random_operation.predecessor,
+            random_operation.salt,
+            MAX_UINT_128 + 1,
+            random_operation.description,
+            {"from": proposer},
         )

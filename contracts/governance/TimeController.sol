@@ -95,12 +95,22 @@ contract TimelockController is AccessControl {
     /**
      * @dev Emitted when operation `id` is cancelled.
      */
-    event Cancelled(bytes32 indexed id, address sender, string status);
+    event Cancelled(
+        bytes32 indexed id,
+        address sender,
+        string reasoning,
+        string status
+    );
 
     /**
      * @dev Emitted when operation `id` is rejected by supreme court.
      */
-    event Rejected(bytes32 indexed id, address sender, string status);
+    event Rejected(
+        bytes32 indexed id,
+        address sender,
+        string reasoning,
+        string status
+    );
 
     /**
      * @dev Emitted when the minimum delay for future operations is modified.
@@ -111,17 +121,6 @@ contract TimelockController is AccessControl {
      * @dev Emitted when an operation `id` is disputed by VETO
      */
     event CallDisputed(bytes32 indexed id, address sender, string status);
-
-    /**
-     * @dev Emitted when a disputed operation `id` is resolved by SUPREMECOURT
-     */
-    event CallDisputedResolved(
-        bytes32 indexed id,
-        SupremeRuling ruling,
-        bytes data,
-        address sender,
-        string status
-    );
 
     /**
      * @dev Initializes the contract with a given `minDelay`.
@@ -335,7 +334,7 @@ contract TimelockController is AccessControl {
             value,
             data,
             predecessor,
-            getTimestamp(id),
+            block.timestamp + delay,
             msg.sender,
             description,
             "Proposed"
@@ -385,7 +384,7 @@ contract TimelockController is AccessControl {
                 values[i],
                 datas[i],
                 predecessor,
-                getTimestamp(id),
+                block.timestamp + delay,
                 msg.sender,
                 description,
                 "Proposed"
@@ -405,7 +404,12 @@ contract TimelockController is AccessControl {
             delay >= getMinDelay(),
             "TimelockController: insufficient delay"
         );
-        _transactionInfo[id].timestamp = uint128(block.timestamp + delay);
+        uint256 readyTime = block.timestamp + delay;
+        require(
+            readyTime <= type(uint128).max,
+            "TimelockController: value doesn't fit in 128 bits"
+        );
+        _transactionInfo[id].timestamp = uint128(readyTime);
     }
 
     /**
@@ -415,14 +419,18 @@ contract TimelockController is AccessControl {
      *
      * - the caller must have the 'executor' role.
      */
-    function cancel(bytes32 id) public virtual onlyRole(CANCELLOR_ROLE) {
+    function cancel(bytes32 id, string memory reasoning)
+        public
+        virtual
+        onlyRole(CANCELLOR_ROLE)
+    {
         require(
             isOperationPending(id),
             "TimelockController: operation cannot be cancelled"
         );
         delete _transactionInfo[id];
 
-        emit Cancelled(id, msg.sender, "Cancelled");
+        emit Cancelled(id, msg.sender, reasoning, "Cancelled");
     }
 
     /**
@@ -593,8 +601,7 @@ contract TimelockController is AccessControl {
      * @dev callDisputeResolve to (cancel or execute) a disputed operation based on supreme court judgement .
      * @param id operation id
      * @param ruling is judgement returned from supreme court contract, true means veto is successful
-     * @param data is for arbitrary data input that may be added for notes purposes (perhaps a hash of data or IPFS content hash).
-     *
+     * @param reasoning text explanation on why supreme court may have decided to accept or reject veto
      * Requirements:
      *
      * - the caller must have the 'supremecourt' role.
@@ -602,7 +609,7 @@ contract TimelockController is AccessControl {
     function callDisputeResolve(
         bytes32 id,
         SupremeRuling ruling,
-        bytes calldata data
+        string memory reasoning
     ) public onlyRole(SUPREMECOURT_ROLE) {
         require(
             getDisputeStatus(id) == DisputeState.DISPUTED,
@@ -610,17 +617,10 @@ contract TimelockController is AccessControl {
         );
         if (ruling == SupremeRuling.ACCEPT_VETO) {
             delete _transactionInfo[id];
-            emit Cancelled(id, msg.sender, "Cancelled");
+            emit Cancelled(id, msg.sender, reasoning, "Cancelled");
         } else {
             _transactionInfo[id].state = DisputeState.REJECTED;
-            emit Rejected(id, msg.sender, "Rejected");
+            emit Rejected(id, msg.sender, reasoning, "Rejected");
         }
-        emit CallDisputedResolved(
-            id,
-            ruling,
-            data,
-            msg.sender,
-            "Veto Resolved"
-        );
     }
 }
